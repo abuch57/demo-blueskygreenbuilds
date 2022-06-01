@@ -81,7 +81,7 @@ workflows:
       - maven/parallel_test:
           executor: jdk17
           parallel_it_pattern: '**/*Tests*.*'
-          test_directory: src/**
+          test_directory: src/*
           parallelism: 2
 
 jobs:
