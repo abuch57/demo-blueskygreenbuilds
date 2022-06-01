@@ -13,13 +13,18 @@ parameters:
     type: string
     default: delete deployment
 
+executors:
+  jdk17:
+    docker:
+      - image: 'cimg/openjdk:17.0-browsers'
+
 
 orbs:
   continuation: circleci/continuation@0.2.0
   kubernetes:   circleci/kubernetes@0.12.0
   kubectl-config: ryanpedersen/kubectl-config@0.1.0
   saucelabs:    saucelabs/sauce-connect@1.0.1
-  maven:        circleci/maven@0.0.4
+  maven:        circleci/maven@1.3.0
   build-auditor:
     jobs:
       check_context_usage:
@@ -73,34 +78,11 @@ workflows:
   build_deploy:
     unless: << pipeline.parameters.cleanup >>
     jobs:
-      - unit-test:
-          context: Production-Only  #we'll see this is caught by nightly auditor as invalid.
-      - sum-coverage:
-          requires:
-            - unit-test
-      - package-jar:
-          requires:
-            - unit-test
-          filters:
-            branches:
-              only: main
-      - package-docker:
-          requires:
-            - unit-test
-          filters:
-            branches:
-              only: main
-      - update-deployment:
-          requires:
-            - package-docker
-          filters:
-            branches:
-              only: main
-  vamp:
-    when: << pipeline.parameters.cleanup >>
-    jobs:
-      - delete-deployment:
-          name: << pipeline.parameters.job_name >>
+      - maven/parallel_test:
+          executor: jdk17
+          parallel_it_pattern: '**/*Tests*.*'
+          test_directory: src/**
+          parallelism: 2
 
 jobs:
   unit-test:
